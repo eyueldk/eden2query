@@ -1,7 +1,7 @@
 {
   "name": "eden2query",
   "description": "Type-safe Eden Treaty to React Query helpers",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "files": [
     "dist"
@@ -18,6 +18,14 @@
     "./package.json": "./package.json"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eyueldk/eden2query.git"
+  },
+  "homepage": "https://github.com/eyueldk/eden2query#readme",
+  "bugs": {
+    "url": "https://github.com/eyueldk/eden2query/issues"
+  },
   "keywords": [
     "elysia",
     "eden",

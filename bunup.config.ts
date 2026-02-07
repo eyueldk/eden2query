@@ -10,4 +10,4 @@ export default defineConfig({
   dts: true,
   exports: true,
   external: ["@elysiajs/eden", "@tanstack/react-query"],
-})
+});

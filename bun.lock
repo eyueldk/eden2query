@@ -5,13 +5,13 @@
     "": {
       "name": "eden2query",
       "devDependencies": {
-        "@elysiajs/eden": "^1.4.6",
-        "@tanstack/react-query": "^5.90.20",
         "@types/bun": "latest",
         "bunup": "^0.16.22",
         "elysia": "^1.4.22",
       },
       "peerDependencies": {
+        "@elysiajs/eden": "^1.4.6",
+        "@tanstack/react-query": "^5.90.20",
         "typescript": "^5",
       },
     },

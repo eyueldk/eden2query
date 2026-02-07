@@ -1,50 +1,72 @@
 import type { Treaty } from "@elysiajs/eden";
-import { mutationOptions, queryOptions, type UseMutationOptions } from "@tanstack/react-query";
+import { mutationOptions, queryOptions, useQuery, type UseMutationOptions, type UseMutationResult, type UseQueryOptions } from "@tanstack/react-query";
 
-type EdenFn<I = any, T extends Record<number, unknown> = Record<number, unknown>> = (input: I) => Promise<Treaty.TreatyResponse<T>>;
+type EdenMutationFn<
+  TBody = any, 
+  TOptions = any, 
+  TResponse extends Record<number, unknown> = Record<number, unknown>
+> = (
+  (body: TBody, options: TOptions) => Promise<Treaty.TreatyResponse<TResponse>>
+);
 
-export function treatyMutationOptions<
-  T extends EdenFn,
-  P extends Parameters<T>,
-  R extends Awaited<ReturnType<T>>
->(params: {
-  fn: T,
-} & Omit<
-  Parameters<typeof mutationOptions<R["data"], R["error"], P[0]>>[0], 
-  "mutationFn"
->) {
-  return mutationOptions<R["data"], R["error"], P[0]>({
+type EdenQueryFn<
+  TResponse extends Record<number, unknown> = Record<number, unknown>
+> = (
+  () => Promise<Treaty.TreatyResponse<TResponse>>
+);
+
+type InferMutationVariables<TFn extends EdenMutationFn> = (
+  unknown extends Parameters<TFn>[0]
+    ? Parameters<TFn>[1]
+    : Parameters<TFn>[1] & { body: Parameters<TFn>[0] }
+);
+
+type InferMutationOptions<TFn extends EdenMutationFn> = (
+  UseMutationOptions<
+    Awaited<ReturnType<TFn>>["data"],
+    Awaited<ReturnType<TFn>>["error"],
+    InferMutationVariables<TFn>
+  >
+);
+
+type InferQueryOptions<
+  TFn extends EdenQueryFn, 
+> = (
+  UseQueryOptions<
+    Awaited<ReturnType<TFn>>["data"],
+    Awaited<ReturnType<TFn>>["error"]
+  >
+);
+
+export function treatyMutationOptions<TFn extends EdenMutationFn>(
+  fn: TFn,
+  options?: Omit<InferMutationOptions<TFn>, "mutationFn">
+): InferMutationOptions<TFn> {
+  return mutationOptions({
     mutationFn: async (variables) => {
-      const response = await params.fn(variables);
+      const { body, ...rest } = variables;
+      const response = await fn(body, rest);
       const { data, error } = response;
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       return data;
     },
-    ...params,
+    ...options,
   });
 }
 
 export function treatyQueryOptions<
-  T extends EdenFn,
-  P extends Parameters<T>,
-  R extends Awaited<ReturnType<T>>
->(params: {
-  queryKey: string[];
-  fn: T
-} & Omit<
-  Parameters<typeof queryOptions<R["data"], R["error"], P[0]>>[0], 
-  "queryFn"
->) {
-  return queryOptions<R["data"], R["error"], P[0]>({
-    queryKey: params.queryKey,
-    queryFn: async (variables) => {
-      const { data, error } = await params.fn(variables);
-      if (error) {
-        throw error;
-      }
+  TFn extends EdenQueryFn,
+>(
+  fn: TFn,
+  options: Omit<InferQueryOptions<TFn>, "queryFn">
+): InferQueryOptions<TFn> {
+  return queryOptions({
+    queryFn: async () => {
+      const response = await fn();
+      const { data, error } = response;
+      if (error) throw error;
       return data;
-    }
-  });
+    },
+    ...options,
+  }) as InferQueryOptions<TFn>;
 }

@@ -17,21 +17,19 @@ import type { App } from "./server"; // your Elysia app type
 
 const client = treaty<App>("localhost:3000");
 
-// GET → queryOptions
-const resourceQuery = treatyQueryOptions({
-  queryKey: ["resource"],
-  fn: client.api.resource.get,
-});
+// GET → queryOptions (first arg is a thunk that calls the Eden GET function)
+const resourceQuery = treatyQueryOptions(
+  () => client.api.resource.get({ query: { q: "hello" } }),
+  { queryKey: ["resource"] },
+);
 
 // POST / PUT / DELETE → mutationOptions
-const createResource = treatyMutationOptions({
-  fn: client.api.resource.post,
-});
+const createResource = treatyMutationOptions(client.api.resource.post);
 
 // Parameterised routes — bind params first
-const updateResource = treatyMutationOptions({
-  fn: client.api.resource({ id: "some-id" }).put,
-});
+const updateResource = treatyMutationOptions(
+  client.api.resource({ id: "some-id" }).put,
+);
 ```
 
 Then use them with React Query as usual:
@@ -40,7 +38,7 @@ Then use them with React Query as usual:
 const { data } = useQuery(resourceQuery);
 const mutation = useMutation(createResource);
 
-mutation.mutate({ name: "New item" }); // fully typed input
+mutation.mutate({ body: { name: "New item" }, query: { q: "hello" } }); // fully typed input
 ```
 
 Works with `prefetchQuery`, `ensureQueryData`, `useSuspenseQuery`, etc:
@@ -50,26 +48,25 @@ const queryClient = new QueryClient();
 await queryClient.prefetchQuery(resourceQuery);
 ```
 
-You can also pass any standard React Query options alongside `fn`:
+You can also pass any standard React Query options as the second argument:
 
 ```ts
-const resourceQuery = treatyQueryOptions({
-  queryKey: ["resource"],
-  fn: client.api.resource.get,
-  refetchInterval: 1000,
-});
+const resourceQuery = treatyQueryOptions(
+  () => client.api.resource.get({ query: { q: "hello" } }),
+  { queryKey: ["resource"], refetchInterval: 1000 },
+);
 
-const createResource = treatyMutationOptions({
-  fn: client.api.resource.post,
-  onSuccess: () => console.log("created!"),
-});
+const createResource = treatyMutationOptions(
+  client.api.resource.post,
+  { onSuccess: () => console.log("created!") },
+);
 ```
 
 ## API
 
-**`treatyQueryOptions({ queryKey, fn, ...queryOptions })`** — wraps an Eden GET function into `queryOptions`. Accepts all `queryOptions` fields except `queryFn`. Extracts `data` from the response and throws on `error`.
+**`treatyQueryOptions(fn, queryOptions)`** — wraps an Eden GET call into `queryOptions`. `fn` is a **thunk** (zero-argument function) that calls the Eden GET function, e.g. `() => client.api.resource.get({ query: { ... } })`. This lets you bind query parameters, headers, or any other Eden options at definition time. The second argument accepts all `queryOptions` fields except `queryFn`. Extracts `data` from the response and throws on `error`.
 
-**`treatyMutationOptions({ fn, ...mutationOptions })`** — wraps an Eden mutation function into `mutationOptions`. Accepts all `mutationOptions` fields except `mutationFn` (e.g. `onSuccess`, `onSettled`, `onMutate`). The `mutate` call accepts the same input the Eden function expects.
+**`treatyMutationOptions(fn, mutationOptions?)`** — wraps an Eden mutation function into `mutationOptions`. The optional second argument accepts all `mutationOptions` fields except `mutationFn` (e.g. `onSuccess`, `onSettled`, `onMutate`). The `mutate` call receives a single object with `body` and any other Eden options (like `query`) as the input.
 
 Both infer data, error, and input types end-to-end from your Elysia route definitions. No manual generics needed.
 

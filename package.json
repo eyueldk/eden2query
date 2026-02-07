@@ -1,10 +1,38 @@
 {
   "name": "eden2query",
-  "module": "src/index.ts",
+  "description": "Type-safe Eden Treaty to React Query helpers",
+  "version": "0.1.0",
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "license": "MIT",
+  "keywords": [
+    "elysia",
+    "eden",
+    "react-query",
+    "tanstack",
+    "typescript"
+  ],
   "scripts": {
     "build": "bunup",
-    "prepublishOnly": "bunup"
+    "prepublishOnly": "bun run build"
+  },
+  "peerDependencies": {
+    "@elysiajs/eden": "^1.4.6",
+    "@tanstack/react-query": "^5.90.20",
+    "typescript": "^5"
   },
   "devDependencies": {
     "@elysiajs/eden": "^1.4.6",
@@ -12,8 +40,5 @@
     "@types/bun": "latest",
     "bunup": "^0.16.22",
     "elysia": "^1.4.22"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   }
 }

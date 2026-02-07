@@ -43,7 +43,12 @@ const mutation = useMutation(createResource);
 mutation.mutate({ name: "New item" }); // fully typed input
 ```
 
-Works with `prefetchQuery`, `ensureQueryData`, `useSuspenseQuery`, etc.
+Works with `prefetchQuery`, `ensureQueryData`, `useSuspenseQuery`, etc:
+
+```ts
+const queryClient = new QueryClient();
+await queryClient.prefetchQuery(resourceQuery);
+```
 
 You can also pass any standard React Query options alongside `fn`:
 

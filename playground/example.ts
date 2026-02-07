@@ -3,6 +3,10 @@ import Elysia, { t } from "elysia";
 import { treatyMutationOptions, treatyQueryOptions } from "../src";
 import { QueryClient, useMutation, useQuery } from "@tanstack/react-query";
 
+const Input = t.Object({
+  name: t.String()
+});
+
 const GetResponse = t.Object({
   message: t.String()
 });
@@ -21,9 +25,10 @@ const app = new Elysia({ prefix: "/api" })
       400: ErrorResponse,
     }
   })
-  .post("/resource", ({ status }) => {
-    return status(200, { message: "Hello World" });
+  .post("/resource", ({ status, body }) => {
+    return status(200, { message: `Hello ${body.name}` });
   }, {
+    body: Input,
     response: {
       200: GetResponse,
       400: ErrorResponse,
@@ -84,5 +89,6 @@ const getQuery = useQuery(getOptions);
 
 // Example: Mutation
 const postMutation = useMutation(postOptions);
+postMutation.mutate({ name: "World" });
 const putMutation = useMutation(putOptions);
 const deleteMutation = useMutation(deleteOptions);

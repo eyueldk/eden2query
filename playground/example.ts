@@ -1,6 +1,6 @@
 import { treaty } from "@elysiajs/eden";
 import Elysia, { t } from "elysia";
-import { treatyMutationOptions, treatyQueryOptions } from "../src";
+import { edenMutationOptions, edenQueryOptions } from "../src";
 import { QueryClient, useMutation, useQuery } from "@tanstack/react-query";
 
 const Input = t.Object({
@@ -58,14 +58,14 @@ const app = new Elysia({ prefix: "/api" })
 const client = treaty<typeof app>("DUMMY");
 
 // building options
-const getOptions = treatyQueryOptions(() => {
+const getOptions = edenQueryOptions(() => {
   return client.api.resource.get({ query: { q: "hello" } })
 }, {
   queryKey: ["resource"],
   refetchInterval: 1000,
 });
 
-const postOptions = treatyMutationOptions(
+const postOptions = edenMutationOptions(
   client.api.resource.post, {
     onSuccess: () => {
       console.log("Success");
@@ -73,7 +73,7 @@ const postOptions = treatyMutationOptions(
   }
 );
 
-const putOptions = treatyMutationOptions(
+const putOptions = edenMutationOptions(
   client.api.resource({ id: "dummy" }).put, {
     onSettled: () => {
       console.log("Settled");
@@ -81,7 +81,7 @@ const putOptions = treatyMutationOptions(
   }
 );
 
-const deleteOptions = treatyMutationOptions(
+const deleteOptions = edenMutationOptions(
   client.api.resource({ id: "dummy" }).delete, {
     onMutate: () => {
       console.log("Mutate");

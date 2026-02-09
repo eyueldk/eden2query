@@ -1,4 +1,6 @@
 export {
-  treatyMutationOptions,
-  treatyQueryOptions,
+  edenMutationOptions,
+  edenQueryOptions,
+  type InferMutationOptions,
+  type InferQueryOptions,
 } from "./lib";

@@ -21,7 +21,7 @@ type InferMutationVariables<TFn extends EdenMutationFn> = (
     : Parameters<TFn>[1] & { body: Parameters<TFn>[0] }
 );
 
-type InferMutationOptions<TFn extends EdenMutationFn> = (
+export type InferMutationOptions<TFn extends EdenMutationFn> = (
   UseMutationOptions<
     Awaited<ReturnType<TFn>>["data"],
     Awaited<ReturnType<TFn>>["error"],
@@ -29,7 +29,7 @@ type InferMutationOptions<TFn extends EdenMutationFn> = (
   >
 );
 
-type InferQueryOptions<
+export type InferQueryOptions<
   TFn extends EdenQueryFn, 
 > = (
   UseQueryOptions<
@@ -38,7 +38,7 @@ type InferQueryOptions<
   >
 );
 
-export function treatyMutationOptions<TFn extends EdenMutationFn>(
+export function edenMutationOptions<TFn extends EdenMutationFn>(
   fn: TFn,
   options?: Omit<InferMutationOptions<TFn>, "mutationFn">
 ): InferMutationOptions<TFn> {
@@ -54,7 +54,7 @@ export function treatyMutationOptions<TFn extends EdenMutationFn>(
   });
 }
 
-export function treatyQueryOptions<
+export function edenQueryOptions<
   TFn extends EdenQueryFn,
 >(
   fn: TFn,

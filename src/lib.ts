@@ -1,72 +1,117 @@
 import type { Treaty } from "@elysiajs/eden";
-import { mutationOptions, queryOptions, useQuery, type UseMutationOptions, type UseMutationResult, type UseQueryOptions } from "@tanstack/react-query";
+import {
+  mutationOptions,
+  queryOptions,
+  type UseMutationOptions,
+  type UseQueryOptions,
+} from "@tanstack/react-query";
 
-type EdenMutationFn<
-  TBody = any, 
-  TOptions = any, 
-  TResponse extends Record<number, unknown> = Record<number, unknown>
+type TreatyResponse = Record<number, unknown>;
+
+export type TreatyFunctionWithoutParams<
+  TResponse extends TreatyResponse = TreatyResponse,
+> = () => Promise<Treaty.TreatyResponse<TResponse>>;
+
+export type TreatyFunctionWithParams<
+  TParams,
+  TResponse extends TreatyResponse,
+> = (params: TParams) => Promise<Treaty.TreatyResponse<TResponse>>;
+
+export type TreatyData<TResponse extends TreatyResponse> =
+  Treaty.TreatyResponse<TResponse>["data"];
+
+export type TreatyError<TResponse extends TreatyResponse> =
+  Treaty.TreatyResponse<TResponse>["error"];
+
+export type TreatyMutationOptions<
+  TVariables,
+  TResponse extends TreatyResponse,
+> = UseMutationOptions<
+  TreatyData<TResponse>,
+  TreatyError<TResponse>,
+  TVariables
+>;
+
+export type TreatyQueryOptions<TResponse extends Record<number, unknown>> =
+  UseQueryOptions<TreatyData<TResponse>, TreatyError<TResponse>>;
+
+export type InferTreatyResponse<
+  T extends TreatyFunctionWithParams<any, any> | TreatyFunctionWithoutParams<any>
 > = (
-  (body: TBody, options: TOptions) => Promise<Treaty.TreatyResponse<TResponse>>
+  Awaited<ReturnType<T>> extends Treaty.TreatyResponse<infer TResponse> 
+  ? TResponse : never
 );
 
-type EdenQueryFn<
-  TResponse extends Record<number, unknown> = Record<number, unknown>
+export type InferTreatyVariables<
+  T extends TreatyFunctionWithParams<any, any> | TreatyFunctionWithoutParams<any>
 > = (
-  () => Promise<Treaty.TreatyResponse<TResponse>>
+  Parameters<T>[0] extends void ? void : Parameters<T>[0]
 );
 
-type InferMutationVariables<TFn extends EdenMutationFn> = (
-  unknown extends Parameters<TFn>[0]
-    ? Parameters<TFn>[1]
-    : Parameters<TFn>[1] & { body: Parameters<TFn>[0] }
-);
-
-export type InferMutationOptions<TFn extends EdenMutationFn> = (
-  UseMutationOptions<
-    Awaited<ReturnType<TFn>>["data"],
-    Awaited<ReturnType<TFn>>["error"],
-    InferMutationVariables<TFn>
-  >
-);
-
-export type InferQueryOptions<
-  TFn extends EdenQueryFn, 
+export type InferTreatyMutationOptions<
+  T extends TreatyFunctionWithParams<any, any> | TreatyFunctionWithoutParams<any>
 > = (
-  UseQueryOptions<
-    Awaited<ReturnType<TFn>>["data"],
-    Awaited<ReturnType<TFn>>["error"]
-  >
+  Awaited<ReturnType<T>> extends Treaty.TreatyResponse<infer TResponse> 
+  ? TreatyMutationOptions<InferTreatyVariables<T>, TResponse> : never
 );
 
-export function edenMutationOptions<TFn extends EdenMutationFn>(
-  fn: TFn,
-  options?: Omit<InferMutationOptions<TFn>, "mutationFn">
-): InferMutationOptions<TFn> {
-  return mutationOptions({
+export type InferTreatyQueryOptions<
+  T extends TreatyFunctionWithoutParams<any>
+> = (
+  Awaited<ReturnType<T>> extends Treaty.TreatyResponse<infer TResponse> 
+  ? TreatyQueryOptions<TResponse> : never
+);
+
+export function treatyMutationOptions<TResponse extends TreatyResponse>(
+  fn: TreatyFunctionWithoutParams<TResponse>,
+  options?: Omit<TreatyMutationOptions<void, TResponse>, "mutationFn">,
+): TreatyMutationOptions<void, TResponse>;
+export function treatyMutationOptions<
+  TVariables,
+  TResponse extends TreatyResponse,
+>(
+  fn: TreatyFunctionWithParams<TVariables, TResponse>,
+  options?: Omit<TreatyMutationOptions<TVariables, TResponse>, "mutationFn">,
+): TreatyMutationOptions<TVariables, TResponse>;
+export function treatyMutationOptions<
+  TVariables,
+  TResponse extends TreatyResponse,
+>(
+  fn:
+    | TreatyFunctionWithoutParams<TResponse>
+    | TreatyFunctionWithParams<TVariables, TResponse>,
+  options?: Omit<TreatyMutationOptions<TVariables, TResponse>, "mutationFn">,
+): TreatyMutationOptions<TVariables, TResponse> {
+  type TData = TreatyData<TResponse>;
+  type TError = TreatyError<TResponse>;
+  return mutationOptions<TData, TError, TVariables>({
+    ...options,
     mutationFn: async (variables) => {
-      const { body, ...rest } = variables;
-      const response = await fn(body, rest);
+      const response = await (
+        fn.length === 0 ? (fn as () => Promise<Treaty.TreatyResponse<TResponse>>)() : (fn as TreatyFunctionWithParams<TVariables, TResponse>)(variables)
+      );
       const { data, error } = response;
       if (error) throw error;
       return data;
     },
-    ...options,
   });
 }
 
-export function edenQueryOptions<
-  TFn extends EdenQueryFn,
+export function treatyQueryOptions<
+  TResponse extends TreatyResponse = TreatyResponse,
 >(
-  fn: TFn,
-  options: Omit<InferQueryOptions<TFn>, "queryFn">
-): InferQueryOptions<TFn> {
-  return queryOptions({
+  fn: TreatyFunctionWithoutParams<TResponse>,
+  options: Omit<TreatyQueryOptions<TResponse>, "queryFn">,
+): TreatyQueryOptions<TResponse> {
+  type TData = TreatyData<TResponse>;
+  type TError = TreatyError<TResponse>;
+  return queryOptions<TData, TError>({
+    ...options,
     queryFn: async () => {
       const response = await fn();
       const { data, error } = response;
       if (error) throw error;
       return data;
     },
-    ...options,
-  }) as InferQueryOptions<TFn>;
+  });
 }

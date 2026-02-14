@@ -1,7 +1,7 @@
 {
   "name": "eden2query",
   "description": "Type-safe Eden Treaty to React Query helpers",
-  "version": "0.2.0",
+  "version": "0.3.2",
   "type": "module",
   "files": [
     "dist"
@@ -35,6 +35,7 @@
   ],
   "scripts": {
     "build": "bunup",
+    "format": "prettier --write .",
     "prepublishOnly": "bun run build"
   },
   "peerDependencies": {
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "bunup": "^0.16.22",
-    "elysia": "^1.4.22"
+    "elysia": "^1.4.22",
+    "prettier": "^3.4.2"
   }
 }

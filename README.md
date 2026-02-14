@@ -10,69 +10,79 @@ bun add eden2query @elysiajs/eden @tanstack/react-query
 
 ## Usage
 
-```ts
-import { treaty } from "@elysiajs/eden";
-import { edenQueryOptions, edenMutationOptions } from "eden2query";
-import type { App } from "./server"; // your Elysia app type
-
-const client = treaty<App>("localhost:3000");
-
-// GET → queryOptions (first arg is a thunk that calls the Eden GET function)
-const resourceQuery = edenQueryOptions(
-  () => client.api.resource.get({ query: { q: "hello" } }),
-  { queryKey: ["resource"] },
-);
-
-// POST / PUT / DELETE → mutationOptions
-const createResource = edenMutationOptions(client.api.resource.post);
-
-// Parameterised routes — bind params first
-const updateResource = edenMutationOptions(
-  client.api.resource({ id: "some-id" }).put,
-);
-```
-
-Then use them with React Query as usual:
-
-```tsx
-const { data } = useQuery(resourceQuery);
-const mutation = useMutation(createResource);
-
-mutation.mutate({ body: { name: "New item" }, query: { q: "hello" } }); // fully typed input
-```
-
-Works with `prefetchQuery`, `ensureQueryData`, `useSuspenseQuery`, etc:
+**Queries (GET)** — pass a thunk that calls the Treaty GET:
 
 ```ts
-const queryClient = new QueryClient();
-await queryClient.prefetchQuery(resourceQuery);
-```
-
-You can also pass any standard React Query options as the second argument:
-
-```ts
-const resourceQuery = edenQueryOptions(
+const getOptions = treatyQueryOptions(
   () => client.api.resource.get({ query: { q: "hello" } }),
   { queryKey: ["resource"], refetchInterval: 1000 },
 );
+```
 
-const createResource = edenMutationOptions(
-  client.api.resource.post,
-  { onSuccess: () => console.log("created!") },
+**Mutations with variables (POST, PUT, etc.)** — pass a function that receives the mutation input, or a bound Treaty method:
+
+```ts
+// Wrapper when Treaty uses (body, options)
+const postOptions = treatyMutationOptions(
+  (vars: { body: { name: string }; query: { q: string } }) =>
+    client.api.resource.post(vars.body, { query: vars.query }),
+  { onSuccess: () => console.log("Success") },
 );
+
+// Parameterised routes — bind params first
+const putOptions = treatyMutationOptions(
+  client.api.resource({ id: "dummy" }).put,
+  { onSettled: () => console.log("Settled") },
+);
+```
+
+**Mutations without variables (e.g. DELETE with fixed params)** — pass a no-argument function; `mutate()` is then called with no args:
+
+```ts
+const deleteOptions = treatyMutationOptions(
+  () => client.api.resource({ id: "dummy" }).delete(),
+  { onMutate: () => console.log("Mutate") },
+);
+```
+
+Use with React Query as usual:
+
+```tsx
+const { data } = useQuery(getOptions);
+
+const postMutation = useMutation(postOptions);
+postMutation.mutate({ body: { name: "World" }, query: { q: "hello" } });
+
+const putMutation = useMutation(putOptions);
+putMutation.mutate({ name: "World" });
+
+const deleteMutation = useMutation(deleteOptions);
+deleteMutation.mutate(); // no arguments
+```
+
+Prefetch and other helpers work as usual:
+
+```ts
+const queryClient = new QueryClient();
+queryClient.prefetchQuery(getOptions);
 ```
 
 ## API
 
-**`edenQueryOptions(fn, queryOptions)`** — wraps an Eden GET call into `queryOptions`. `fn` is a **thunk** (zero-argument function) that calls the Eden GET function, e.g. `() => client.api.resource.get({ query: { ... } })`. This lets you bind query parameters, headers, or any other Eden options at definition time. The second argument accepts all `queryOptions` fields except `queryFn`. Extracts `data` from the response and throws on `error`.
+**`treatyQueryOptions(fn, queryOptions)`** — wraps a Treaty GET call into `queryOptions`. `fn` is a **thunk** (zero-argument function) that calls the Treaty GET, e.g. `() => client.api.resource.get({ query: { ... } })`. The second argument accepts all `queryOptions` fields except `queryFn`. Extracts `data` from the response and throws on `error`.
 
-**`edenMutationOptions(fn, mutationOptions?)`** — wraps an Eden mutation function into `mutationOptions`. The optional second argument accepts all `mutationOptions` fields except `mutationFn` (e.g. `onSuccess`, `onSettled`, `onMutate`). The `mutate` call receives a single object with `body` and any other Eden options (like `query`) as the input.
+**`treatyMutationOptions(fn, mutationOptions?)`** — wraps a Treaty mutation into `mutationOptions`. Two shapes:
 
-**`InferQueryOptions<TFn>`** — extracts the full `UseQueryOptions` type for a given Eden GET thunk.
+- **No-arg:** `fn` is `() => Promise<...>`. Use when the mutation has no call-time input (e.g. DELETE with fixed path params). `mutate()` is called with no arguments.
+- **With variables:** `fn` is `(vars) => Promise<...>`. Use for POST/PUT etc. `mutate(vars)` receives a single object (e.g. `{ body, query }` or the Treaty method’s first argument). You can pass the Treaty method directly when its signature matches (e.g. `client.api.resource({ id }).put`).
 
-**`InferMutationOptions<TFn>`** — extracts the full `UseMutationOptions` type for a given Eden mutation function.
+The optional second argument accepts all `mutationOptions` fields except `mutationFn` (e.g. `onSuccess`, `onSettled`, `onMutate`).
 
-All helpers infer data, error, and input types end-to-end from your Elysia route definitions. No manual generics needed.
+**`InferTreatyQueryOptions<T>`** — full `UseQueryOptions` type for a given Treaty query.
+
+**`InferTreatyMutationOptions<TVariables, TResponse>`** — full `UseMutationOptions` type for a given Treaty mutation.
+
+Data, error, and input types are inferred end-to-end from your Elysia route definitions.
 
 ## License
 
